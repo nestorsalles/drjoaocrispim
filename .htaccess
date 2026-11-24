@@ -1,0 +1,86 @@
+# =====================================================================
+# Dr. João Crispim - Oftalmologista | .htaccess (Hostinger / Apache)
+# =====================================================================
+
+Options -Indexes
+DirectoryIndex index.html
+
+# ---------------------------------------------------------------------
+# 1 + 2) HTTPS obrigatório + padronização sem www (301, em um único salto)
+# ---------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # www -> sem www (já enviando para HTTPS)
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
+  # HTTP -> HTTPS (compatível com proxy/CDN da Hostinger)
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ---------------------------------------------------------------------
+# 3) Página 404 -> home (one page)
+# ---------------------------------------------------------------------
+ErrorDocument 404 /index.html
+
+# ---------------------------------------------------------------------
+# 4) Compressão gzip/deflate
+# ---------------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE application/javascript text/javascript application/x-javascript
+  AddOutputFilterByType DEFLATE image/svg+xml
+  AddOutputFilterByType DEFLATE application/json application/ld+json
+  AddOutputFilterByType DEFLATE application/xml
+</IfModule>
+
+# ---------------------------------------------------------------------
+# 5) Cache de navegador
+#    Imagens/mídias: 1 mês | CSS/JS: 1 semana | HTML: NUNCA em cache
+# ---------------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                          "access plus 0 seconds"
+
+  ExpiresByType image/jpeg                "access plus 1 month"
+  ExpiresByType image/png                 "access plus 1 month"
+  ExpiresByType image/webp                "access plus 1 month"
+  ExpiresByType image/svg+xml             "access plus 1 month"
+  ExpiresByType image/x-icon              "access plus 1 month"
+
+  ExpiresByType text/css                  "access plus 1 week"
+  ExpiresByType application/javascript    "access plus 1 week"
+  ExpiresByType text/javascript           "access plus 1 week"
+
+  ExpiresByType text/html                 "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Imagens e mídias: 1 mês (2592000 s)
+  <FilesMatch "\.(jpe?g|png|webp|svg|ico)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+
+  # CSS e JS: 1 semana (604800 s)
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+
+  # HTML: sem cache — alterações aparecem na hora
+  <FilesMatch "\.(html?)$">
+    Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    Header unset ETag
+    Header unset Last-Modified
+  </FilesMatch>
+</IfModule>
+
+# HTML sem ETag (evita revalidação por cache)
+<FilesMatch "\.(html?)$">
+  FileETag None
+</FilesMatch>
